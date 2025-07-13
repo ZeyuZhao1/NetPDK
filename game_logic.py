@@ -37,9 +37,9 @@ class Game:
         self.last_played_cards = []
         self.last_player_sid = None
 
-    def add_player(self, sid, name):
+    def add_player(self, sid, name, is_bot=False):
         if not self.game_started and sid not in self.players:
-            self.players[sid] = {'name': name, 'hand': []}
+            self.players[sid] = {'name': name, 'hand': [], 'is_bot': is_bot}
             self.player_order.append(sid)
             return True
         return False
@@ -86,7 +86,7 @@ class Game:
         
         # 优先判断王炸
         if n == 2 and set(cards) == {'小王', '大王'}:
-            return HandType.ROCKET, 99 # 王炸的值最大
+            return HandType.ROCKET, 99
 
         # --- 单牌、对子、三张、炸弹 ---
         if len(counts) == 1:
@@ -105,81 +105,54 @@ class Game:
                 return HandType.FOUR_WITH_TWO, [v for v,c in counts.items() if c==4][0]
 
         # --- 顺子 / 连对 / 飞机 ---
-        # 2和大小王不能参与顺子类
         if CARD_VALUES['2'] in values or CARD_VALUES['小王'] in values or CARD_VALUES['大王'] in values:
             return HandType.UNKNOWN, 0
 
         is_consecutive = values[-1] - values[0] == len(values) - 1
         if is_consecutive:
-            # 顺子
-            if n >= 5 and len(counts) == n:
-                return HandType.STRAIGHT, values[-1]
-            # 连对
-            if n >= 6 and n % 2 == 0 and all(c == 2 for c in counts.values()):
-                return HandType.CONSECUTIVE_PAIRS, values[-1]
-            # 飞机不带翼
-            if n >= 6 and n % 3 == 0 and all(c == 3 for c in counts.values()):
-                return HandType.AIRPLANE, values[-1]
+            if n >= 5 and len(counts) == n: return HandType.STRAIGHT, values[-1]
+            if n >= 6 and n % 2 == 0 and all(c == 2 for c in counts.values()): return HandType.CONSECUTIVE_PAIRS, values[-1]
+            if n >= 6 and n % 3 == 0 and all(c == 3 for c in counts.values()): return HandType.AIRPLANE, values[-1]
         
-        # 飞机带翼
         threes = sorted([v for v, c in counts.items() if c == 3])
         if len(threes) >= 2 and threes[-1] - threes[0] == len(threes) - 1:
-            if len(cards) == len(threes) * 4: # 飞机带单
-                return HandType.AIRPLANE_WITH_SINGLES, threes[-1]
-            if len(cards) == len(threes) * 5: # 飞机带对
-                return HandType.AIRPLANE_WITH_PAIRS, threes[-1]
+            if len(cards) == len(threes) * 4: return HandType.AIRPLANE_WITH_SINGLES, threes[-1]
+            if len(cards) == len(threes) * 5: return HandType.AIRPLANE_WITH_PAIRS, threes[-1]
 
         return HandType.UNKNOWN, 0
 
     def _validate_play(self, cards_to_play):
         current_type, current_value = self._get_play_info(cards_to_play)
         if current_type == HandType.UNKNOWN: return False, "不合法的牌型。"
-
-        if not self.last_played_cards or self.current_turn_sid == self.last_player_sid:
-            return True, "OK"
-
+        if not self.last_played_cards or self.current_turn_sid == self.last_player_sid: return True, "OK"
         last_type, last_value = self._get_play_info(self.last_played_cards)
         
-        # 规则1: 王炸最大
         if current_type == HandType.ROCKET: return True, "OK"
         if last_type == HandType.ROCKET: return False, "王炸是最大的！"
-        
-        # 规则2: 炸弹可以压任何非炸弹
-        if current_type == HandType.BOMB and last_type != HandType.BOMB:
-            return True, "OK"
-
-        # 规则3: 牌型、长度必须一致，且牌值要更大
+        if current_type == HandType.BOMB and last_type != HandType.BOMB: return True, "OK"
         if current_type == last_type and len(cards_to_play) == len(self.last_played_cards):
-            if current_value > last_value:
-                return True, "OK"
-            else:
-                return False, "出的牌要比上家小。"
-        
+            if current_value > last_value: return True, "OK"
+            else: return False, "出的牌要比上家小。"
         return False, "必须出与上家相同类型的牌，或使用炸弹。"
 
     def play_turn(self, sid, cards):
         if not self.game_started or sid != self.current_turn_sid: return None, "还没轮到你。"
         player_hand = self.players[sid]['hand']
         if not all(card in player_hand for card in cards): return None, "试图打出不存在的牌。"
-        
         is_valid, reason = self._validate_play(cards)
         if not is_valid: return None, reason
-
         for card in cards: player_hand.remove(card)
         self.last_played_cards = self._sort_hand(cards)
         self.last_player_sid = sid
-        
         if not player_hand:
             self.game_started = False
             return 'WIN', None
-
         self._next_turn()
         return 'OK', None
 
     def pass_turn(self, sid):
         if not self.game_started or sid != self.current_turn_sid: return False, "还没轮到你。"
         if self.current_turn_sid == self.last_player_sid or not self.last_played_cards: return False, "你是新一轮，必须出牌。"
-        
         self._next_turn()
         if self.current_turn_sid == self.last_player_sid: self.last_played_cards = []
         return True, None
@@ -192,5 +165,13 @@ class Game:
             if len(self.players.get(self.current_turn_sid, {}).get('hand', [])) > 0: break
 
     def get_game_state(self, for_sid):
-        # (此函数无变化)
-        return {'game_started':self.game_started,'my_hand':self.players.get(for_sid,{}).get('hand',[]),'my_sid':for_sid,'players':[{'name':p['name'],'sid':s,'card_count':len(p['hand'])}for s,p in self.players.items()],'player_order':self.player_order,'current_turn_sid':self.current_turn_sid,'last_played_cards':self.last_played_cards,'last_player_sid':self.last_player_sid}
+        return {
+            'game_started': self.game_started,
+            'my_hand': self.players.get(for_sid, {}).get('hand', []),
+            'my_sid': for_sid,
+            'players': [{'name': p['name'], 'sid': s, 'card_count': len(p['hand']), 'is_bot': p['is_bot']} for s, p in self.players.items()],
+            'player_order': self.player_order,
+            'current_turn_sid': self.current_turn_sid,
+            'last_played_cards': self.last_played_cards,
+            'last_player_sid': self.last_player_sid,
+        }

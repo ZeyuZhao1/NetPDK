@@ -9,8 +9,11 @@
     <!-- 大厅视图 -->
     <div id="lobby-view">
         <h1>局域网跑得快</h1>
-        <input type="text" id="name-input" placeholder="输入你的昵称">
-        <button id="join-btn">加入游戏</button>
+        <div class="lobby-controls">
+            <input type="text" id="name-input" placeholder="输入你的昵称">
+            <button id="join-btn">加入游戏</button>
+            <button id="add-bot-btn">添加机器人</button>
+        </div>
         <div id="player-list-lobby">
             <h2>已加入的玩家:</h2>
             <ul id="lobby-players"></ul>
@@ -25,11 +28,10 @@
         </div>
         <div id="opponents-area"></div>
 
-        <!-- 修改的部分 -->
         <div id="table-area">
             <h3>场上出的牌</h3>
-            <p id="last-play-info"></p> <!-- 新增：用于显示 "玩家X 打出:" -->
-            <div id="last-played-cards"></div> <!-- 容器专门放牌 -->
+            <p id="last-play-info"></p>
+            <div id="last-played-cards"></div>
         </div>
 
         <div id="my-area">
