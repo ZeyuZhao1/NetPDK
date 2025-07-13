@@ -1,0 +1,43 @@
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #3d6b3d; color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
+#lobby-view, #game-view { background-color: #f9f9f9; padding: 1.5em 2em; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.2); width: 95%; max-width: 900px; text-align: center; display: flex; flex-direction: column; }
+button { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.2s ease; font-size: 1em; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+button:disabled { background-color: #ccc; cursor: not-allowed; box-shadow: none; color: #666; }
+#play-btn { background-color: #28a745; color: white; }
+#clear-btn { background-color: #ffc107; color: #333; }
+#pass-btn { background-color: #6c757d; color: white; }
+#start-btn, #join-btn { background-color: #007bff; color: white; }
+.card { position: relative; width: 80px; height: 112px; border: 1px solid #999; border-radius: 8px; background-color: white; cursor: pointer; user-select: none; transition: all 0.2s ease; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
+.card .rank { position: absolute; top: 5px; left: 8px; font-size: 24px; font-weight: bold; }
+.card .suit { position: absolute; top: 28px; left: 8px; font-size: 16px; }
+.card .rank.bottom { bottom: 5px; right: 8px; top: auto; left: auto; transform: rotate(180deg); }
+.card .suit.bottom { bottom: 28px; right: 8px; top: auto; left: auto; transform: rotate(180deg); }
+#my-hand { display: flex; justify-content: center; align-items: flex-end; padding: 20px 0; min-height: 150px; }
+#my-hand .card { margin-left: -48px; }
+#my-hand .card:first-child { margin-left: 0; }
+#my-hand:hover .card { margin-left: -40px; }
+#my-hand .card:hover { transform: translateY(-10px); z-index: 10; }
+.card.selected { border-color: #007bff; transform: translateY(-25px); box-shadow: 0 10px 20px rgba(0, 123, 255, 0.5); z-index: 20; }
+#my-hand:hover .card.selected { transform: translateY(-25px); }
+#table-area { border-top: 2px solid #eee; border-bottom: 2px solid #eee; padding: 10px 0; min-height: 140px; }
+#last-play-info { font-weight: bold; color: #555; margin: 0 0 10px 0; height: 20px; }
+#last-played-cards { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
+#last-played-cards .card { cursor: default; background-color: #f0f0f0; }
+#opponents-area { display: flex; justify-content: space-around; padding: 15px 0; }
+.opponent { border: 2px solid #ccc; padding: 10px; border-radius: 8px; width: 150px; transition: all 0.3s; }
+.active-turn { border-color: #ffc107 !important; box-shadow: 0 0 15px #ffc107; background-color: #fffbe6; }
+#game-message { font-size: 1.2em; font-weight: bold; color: #d9534f; height: 30px; }
+#controls { margin-top: 20px; display: flex; justify-content: center; gap: 15px; }
+
+/* --- 新增：Joker卡牌样式 --- */
+.card.joker {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.joker-text {
+    font-size: 20px;
+    font-weight: bold;
+    writing-mode: vertical-rl; /* 文字竖排 */
+    letter-spacing: 4px;
+}

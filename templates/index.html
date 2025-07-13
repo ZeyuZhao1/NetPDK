@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>局域网跑得快</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- 大厅视图 -->
+    <div id="lobby-view">
+        <h1>局域网跑得快</h1>
+        <input type="text" id="name-input" placeholder="输入你的昵称">
+        <button id="join-btn">加入游戏</button>
+        <div id="player-list-lobby">
+            <h2>已加入的玩家:</h2>
+            <ul id="lobby-players"></ul>
+        </div>
+        <button id="start-btn">开始游戏 (仅房主)</button>
+    </div>
+
+    <!-- 游戏视图 -->
+    <div id="game-view" style="display: none;">
+        <div id="game-info">
+            <p id="game-message"></p>
+        </div>
+        <div id="opponents-area"></div>
+
+        <!-- 修改的部分 -->
+        <div id="table-area">
+            <h3>场上出的牌</h3>
+            <p id="last-play-info"></p> <!-- 新增：用于显示 "玩家X 打出:" -->
+            <div id="last-played-cards"></div> <!-- 容器专门放牌 -->
+        </div>
+
+        <div id="my-area">
+            <h3 id="my-name">我的手牌</h3>
+            <div id="my-hand"></div>
+            <div id="controls">
+                <button id="play-btn">出 牌</button>
+                <button id="clear-btn">清空选择</button>
+                <button id="pass-btn">要不起</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入必要的JS库 -->
+    <script src="https://cdn.socket.io/4.5.2/socket.io.min.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
