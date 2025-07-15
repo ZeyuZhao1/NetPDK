@@ -5,7 +5,7 @@
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-5.7.2-brightgreen.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-这是一个基于Python Flask和Socket.IO构建的网页版“跑得快”扑克牌游戏。它允许多个用户在同一个局域网（LAN）下，通过浏览器访问同一个IP地址，进行实时的多人对战。
+这是一个基于Python Flask和Socket.IO构建的网页版“跑得快”扑克牌游戏。它允许多个用户在同一个局域网（LAN）下，通过浏览器访问同一个IP地址，进行实时的多人对战。也支持添加机器人参与游戏。
 
 This is a web-based, real-time multiplayer "Pǎo De Kuài" (Run Fast) card game built with Python Flask and Socket.IO. It allows multiple users on the same Local Area Network (LAN) to play against each other by accessing a shared IP address in their browsers.
 
