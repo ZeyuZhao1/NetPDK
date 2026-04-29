@@ -26,7 +26,7 @@ class BotPlayer:
         last_played = self.game_state['last_played_cards']
         if last_played:
             for card in last_played:
-                self.unseen_cards.remove(card)
+                self.unseen_cards.discard(card)
 
         is_my_lead = not last_played or self.game_state['current_turn_sid'] == self.game_state['last_player_sid']
 
@@ -124,6 +124,26 @@ class BotPlayer:
                 return min(winning_bombs, key=lambda b: self.game._get_play_info(b)[1])
         
         return ["pass"]
+
+    def _find_plays_from_analysis(self, target_type, target_value):
+        """从现有组合中筛选可直接压过对手的出牌。"""
+        candidates = []
+
+        for combo_group in ['singles', 'pairs', 'threes', 'straights', 'consecutive_pairs', 'airplanes']:
+            for play in self.analyzed_hand.get(combo_group, []):
+                play_type, play_value = self.game._get_play_info(play)
+                if play_type == target_type and play_value > target_value:
+                    candidates.append(play)
+
+        # 对方出炸弹时，只能用更大的炸弹或火箭
+        if target_type == HandType.BOMB:
+            for bomb in self.analyzed_hand.get('bombs', []):
+                _, bomb_value = self.game._get_play_info(bomb)
+                if bomb_value > target_value:
+                    candidates.append(bomb)
+            candidates.extend(self.analyzed_hand.get('rocket', []))
+
+        return candidates
         
     # --- 策略辅助函数 ---
     
