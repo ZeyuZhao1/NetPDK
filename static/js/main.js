@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lobbyPlayersList = document.getElementById('lobby-players');
     const startBtn = document.getElementById('start-btn');
     const gameMessage = document.getElementById('game-message');
+    const turnHint = document.getElementById('turn-hint');
     const opponentsArea = document.getElementById('opponents-area');
     const lastPlayInfo = document.getElementById('last-play-info');
     const lastPlayedCardsDiv = document.getElementById('last-played-cards');
@@ -23,9 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const playBtn = document.getElementById('play-btn');
     const passBtn = document.getElementById('pass-btn');
     const clearBtn = document.getElementById('clear-btn');
+    const sortBtn = document.getElementById('sort-btn');
 
     let mySid = null;
     let selectedCards = [];
+    let currentHand = [];
+    const CARD_ORDER = { '3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14,'2':15,'小王':16,'大王':17 };
+    const SUIT_ORDER = { '♣':1, '♦':2, '♥':3, '♠':4 };
 
     joinBtn.addEventListener('click', () => { const n = nameInput.value.trim(); if(n){ socket.emit('join_game',{name:n}); joinBtn.disabled=true; nameInput.disabled=true; } else { alert('请输入昵称！'); } });
     startBtn.addEventListener('click', () => socket.emit('start_game'));
@@ -33,6 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
     playBtn.addEventListener('click', () => { if (selectedCards.length > 0) socket.emit('play_cards', { cards: selectedCards }); else alert('请先选择要出的牌！'); });
     passBtn.addEventListener('click', () => socket.emit('pass_turn'));
     clearBtn.addEventListener('click', () => { myHandDiv.querySelectorAll('.card.selected').forEach(d => d.classList.remove('selected')); selectedCards = []; });
+    sortBtn.addEventListener('click', () => {
+        currentHand = sortCards(currentHand);
+        renderCards(myHandDiv, currentHand);
+    });
     myHandDiv.addEventListener('click', (e) => { const c=e.target.closest('.card'); if(c){ const d=c.dataset.card; c.classList.toggle('selected'); if(selectedCards.includes(d)){selectedCards=selectedCards.filter(i => i !== d);} else {selectedCards.push(d);}}});
 
     socket.on('connect', () => console.log('Socket.IO: Connected'));
@@ -72,7 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const myData = state.players.find(p => p.sid === mySid);
         myName.textContent = myData ? `${myData.name} (你)` : '我的手牌';
-        renderCards(myHandDiv, state.my_hand);
+        currentHand = sortCards(state.my_hand.slice());
+        renderCards(myHandDiv, currentHand);
 
         if (state.last_played_cards.length > 0) {
             const lastPlayerName = state.players.find(p => p.sid === state.last_player_sid)?.name || '';
@@ -106,6 +116,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentPlayer = state.players.find(p => p.sid === state.current_turn_sid);
         const currentPlayerName = currentPlayer ? `${currentPlayer.name}${currentPlayer.is_bot ? " (Bot)" : ""}` : '';
         gameMessage.textContent = state.message || (isMyTurn ? "轮到你出牌了！" : `等待 ${currentPlayerName} 出牌...`);
+        turnHint.textContent = isMyTurn
+            ? "提示：点击牌可选择；可先点“整理手牌”再出牌。"
+            : "观察场上牌型，保留关键牌（2、王、炸弹）等待时机。";
+    }
+
+    function sortCards(cards) {
+        return cards.sort((a, b) => cardValue(a) - cardValue(b) || suitValue(a) - suitValue(b));
+    }
+
+    function cardValue(card) {
+        if (card === '小王' || card === '大王') return CARD_ORDER[card];
+        return CARD_ORDER[card.slice(1)];
+    }
+
+    function suitValue(card) {
+        if (card === '小王' || card === '大王') return 99;
+        return SUIT_ORDER[card[0]] || 0;
     }
 
     function renderCards(container, cards) {
