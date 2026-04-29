@@ -2,6 +2,7 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>局域网跑得快</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
@@ -25,6 +26,7 @@
     <div id="game-view" style="display: none;">
         <div id="game-info">
             <p id="game-message"></p>
+            <p id="turn-hint"></p>
         </div>
         <div id="opponents-area"></div>
 
@@ -35,7 +37,10 @@
         </div>
 
         <div id="my-area">
-            <h3 id="my-name">我的手牌</h3>
+            <div class="my-header">
+                <h3 id="my-name">我的手牌</h3>
+                <button id="sort-btn" class="secondary-btn">整理手牌</button>
+            </div>
             <div id="my-hand"></div>
             <div id="controls">
                 <button id="play-btn">出 牌</button>

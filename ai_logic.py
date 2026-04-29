@@ -124,6 +124,27 @@ class BotPlayer:
                 return min(winning_bombs, key=lambda b: self.game._get_play_info(b)[1])
         
         return ["pass"]
+
+    def _find_plays_from_analysis(self, target_type, target_value):
+        """从已分析组合中找可直接跟出的牌，尽量避免拆牌。"""
+        candidates = []
+        mapping = {
+            HandType.SINGLE: 'singles',
+            HandType.PAIR: 'pairs',
+            HandType.THREE_OF_A_KIND: 'threes',
+            HandType.STRAIGHT: 'straights',
+            HandType.CONSECUTIVE_PAIRS: 'consecutive_pairs',
+            HandType.AIRPLANE: 'airplanes',
+        }
+        key = mapping.get(target_type)
+        if not key:
+            return candidates
+
+        for combo in self.analyzed_hand.get(key, []):
+            combo_type, combo_value = self.game._get_play_info(combo)
+            if combo_type == target_type and combo_value > target_value:
+                candidates.append(combo)
+        return candidates
         
     # --- 策略辅助函数 ---
     
@@ -140,7 +161,12 @@ class BotPlayer:
     def _select_best_follow(self, plays, last_value):
         """从多个可跟牌组中，选择最优的一个"""
         # 策略：选择刚刚好能大过的最小的牌，避免浪费
-        plays.sort(key=lambda p: self.game._get_play_info(p)[1])
+        def follow_score(play):
+            value = self.game._get_play_info(play)[1]
+            # 末期鼓励主动争夺牌权；前中期倾向省牌
+            phase_bias = -1 if self.game_phase == 'endgame' else 1
+            return value * phase_bias + len(play) * 0.1
+        plays.sort(key=follow_score)
         return plays[0]
 
     def _should_use_bomb(self, last_played):
