@@ -1,5 +1,6 @@
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: radial-gradient(circle at top, #4f8d4f, #315b31); color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
-#lobby-view, #game-view { background-color: #f9f9f9; padding: 1.5em 2em; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.25); width: 95%; max-width: 980px; text-align: center; display: flex; flex-direction: column; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: radial-gradient(circle at top, #4f8d4f, #315b31); color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow: hidden; }
+#lobby-view, #game-view { background-color: #f9f9f9; padding: 1.5em 2em; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.25); width: min(95%, 980px); text-align: center; display: flex; flex-direction: column; box-sizing: border-box; }
+#game-view { max-height: min(94vh, 920px); overflow: hidden; }
 button { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.2s ease; font-size: 1em; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
 button:disabled { background-color: #ccc; cursor: not-allowed; box-shadow: none; color: #666; }
@@ -13,23 +14,27 @@ button:disabled { background-color: #ccc; cursor: not-allowed; box-shadow: none;
 .card .suit { position: absolute; top: 28px; left: 8px; font-size: 16px; }
 .card .rank.bottom { bottom: 5px; right: 8px; top: auto; left: auto; transform: rotate(180deg); }
 .card .suit.bottom { bottom: 28px; right: 8px; top: auto; left: auto; transform: rotate(180deg); }
-#my-hand { display: flex; justify-content: center; align-items: flex-end; padding: 20px 0; min-height: 150px; }
+#my-area { display: flex; flex-direction: column; min-height: 0; }
+#my-hand { display: flex; justify-content: center; align-items: flex-end; padding: 20px 0; min-height: 150px; overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; }
 #my-hand .card { margin-left: -48px; }
 #my-hand .card:first-child { margin-left: 0; }
 #my-hand:hover .card { margin-left: -40px; }
 #my-hand .card:hover { transform: translateY(-10px); z-index: 10; }
+#my-hand.is-scroll-layout { justify-content: flex-start; padding-inline: 10px; }
+#my-hand.is-scroll-layout .card, #my-hand:hover.is-scroll-layout .card { margin-left: 8px; }
+#my-hand.is-scroll-layout .card:first-child { margin-left: 0; }
 .card.selected { border-color: #007bff; transform: translateY(-25px); box-shadow: 0 10px 20px rgba(0, 123, 255, 0.5); z-index: 20; }
 #my-hand:hover .card.selected { transform: translateY(-25px); }
 #table-area { border-top: 2px solid #eee; border-bottom: 2px solid #eee; padding: 10px 0; min-height: 140px; }
 #last-play-info { font-weight: bold; color: #555; margin: 0 0 10px 0; height: 20px; }
 #last-played-cards { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
 #last-played-cards .card { cursor: default; background-color: #f0f0f0; }
-#opponents-area { display: flex; justify-content: space-around; padding: 15px 0; }
-.opponent { border: 2px solid #ccc; padding: 10px; border-radius: 8px; width: 150px; transition: all 0.3s; }
+#opponents-area { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; padding: 15px 0; }
+.opponent { border: 2px solid #ccc; padding: 10px; border-radius: 8px; transition: all 0.3s; }
 .active-turn { border-color: #ffc107 !important; box-shadow: 0 0 15px #ffc107; background-color: #fffbe6; }
 #game-message { font-size: 1.2em; font-weight: bold; color: #d9534f; height: 30px; }
 #turn-hint { margin: 0; color: #4b5563; font-size: 0.95em; min-height: 22px; }
-#controls { margin-top: 20px; display: flex; justify-content: center; gap: 15px; }
+#controls { margin-top: 20px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
 .my-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
 /* --- 新增：Joker卡牌样式 --- */
@@ -46,12 +51,31 @@ button:disabled { background-color: #ccc; cursor: not-allowed; box-shadow: none;
 }
 
 @media (max-width: 900px) {
-    body { overflow-y: auto; height: auto; min-height: 100vh; align-items: flex-start; padding: 16px 0; }
-    #lobby-view, #game-view { padding: 1em; border-radius: 12px; }
+    body { overflow-y: auto; min-height: 100dvh; align-items: flex-start; padding: 12px 0 max(12px, env(safe-area-inset-bottom)); }
+    #lobby-view, #game-view { padding: 1em; border-radius: 12px; width: min(97%, 980px); }
+    #game-view { max-height: none; overflow: visible; }
     #my-hand .card { margin-left: -56px; }
-    #opponents-area { flex-wrap: wrap; gap: 8px; }
-    .opponent { width: 44%; min-width: 130px; }
     .card { width: 68px; height: 96px; }
+    #controls { position: sticky; bottom: 0; background: linear-gradient(180deg, rgba(249,249,249,0), #f9f9f9 25%); padding: 12px 0 max(8px, env(safe-area-inset-bottom)); z-index: 30; }
+    #controls button { flex: 1 1 30%; min-width: 92px; }
+}
+
+@media (max-width: 640px) {
+    .lobby-controls { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .panel label { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 4px; margin-bottom: 8px; }
+    .card { width: 58px; height: 82px; border-radius: 6px; }
+    .card .rank { font-size: 18px; left: 6px; }
+    .card .suit { font-size: 14px; left: 6px; top: 24px; }
+    #my-hand { min-height: 122px; padding: 12px 0; }
+    #my-hand .card, #my-hand:hover .card { margin-left: -44px; }
+    #my-hand.is-scroll-layout .card, #my-hand:hover.is-scroll-layout .card { margin-left: 6px; }
+    .card.selected, #my-hand:hover .card.selected { transform: translateY(-16px); }
+    .my-header { flex-wrap: wrap; justify-content: center; }
+}
+
+@media (max-width: 420px) {
+    #opponents-area { grid-template-columns: 1fr; }
+    #controls button { flex-basis: 100%; }
 }
 
 .panel{border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin:10px 0;background:#fff}.panel label{margin-right:10px}#room-qr{width:180px;height:180px;object-fit:contain}#room-url{word-break:break-all;font-size:.92em;color:#1f2937}
