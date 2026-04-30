@@ -23,8 +23,8 @@ def _assign_host_if_needed(preferred_sid=None):
     """确保房主始终是一个在线的人类玩家。"""
     global host_sid
 
-    # 优先使用本次事件关联的人类玩家
-    if preferred_sid and preferred_sid in game.players and not game.players[preferred_sid].get('is_bot', False):
+    # 仅在当前没有有效房主时，才使用本次事件关联的人类玩家作为候选
+    if host_sid is None and preferred_sid and preferred_sid in game.players and not game.players[preferred_sid].get('is_bot', False):
         host_sid = preferred_sid
         return
 
