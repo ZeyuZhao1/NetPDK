@@ -9,72 +9,46 @@ button:disabled { background-color: #ccc; cursor: not-allowed; box-shadow: none;
 #pass-btn { background-color: #6c757d; color: white; }
 #start-btn, #join-btn { background-color: #007bff; color: white; }
 .secondary-btn { background-color: #e9ecef; color: #333; box-shadow: none; border: 1px solid #ced4da; }
-.card { position: relative; width: 80px; height: 112px; border: 1px solid #999; border-radius: 8px; background-color: white; cursor: pointer; user-select: none; transition: all 0.2s ease; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
-.card .rank { position: absolute; top: 5px; left: 8px; font-size: 24px; font-weight: bold; }
-.card .suit { position: absolute; top: 28px; left: 8px; font-size: 16px; }
-.card .rank.bottom { bottom: 5px; right: 8px; top: auto; left: auto; transform: rotate(180deg); }
-.card .suit.bottom { bottom: 28px; right: 8px; top: auto; left: auto; transform: rotate(180deg); }
+.card { position: relative; width: 64px; height: 92px; border: 1px solid #999; border-radius: 8px; background-color: white; cursor: pointer; user-select: none; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
+.card .rank { position: absolute; top: 4px; left: 6px; font-size: 18px; font-weight: bold; }
+.card .suit { position: absolute; top: 24px; left: 6px; font-size: 14px; }
+.card .rank.bottom { bottom: 4px; right: 6px; top: auto; left: auto; transform: rotate(180deg); }
+.card .suit.bottom { bottom: 24px; right: 6px; top: auto; left: auto; transform: rotate(180deg); }
 #my-area { display: flex; flex-direction: column; min-height: 0; }
-#my-hand { display: flex; justify-content: center; align-items: flex-end; padding: 20px 0; min-height: 150px; overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; }
-#my-hand .card { margin-left: -48px; }
-#my-hand .card:first-child { margin-left: 0; }
-#my-hand:hover .card { margin-left: -40px; }
-#my-hand .card:hover { transform: translateY(-10px); z-index: 10; }
-#my-hand.is-scroll-layout { justify-content: flex-start; padding-inline: 10px; }
-#my-hand.is-scroll-layout .card, #my-hand:hover.is-scroll-layout .card { margin-left: -34px; }
-.card.selected { border-color: #007bff; transform: translateY(-25px); box-shadow: 0 10px 20px rgba(0, 123, 255, 0.5); z-index: 20; }
-#my-hand:hover .card.selected { transform: translateY(-25px); }
+#my-hand { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; align-items: start; padding: 12px; min-height: 156px; overflow-y: auto; overflow-x: hidden; border: 1px solid #e5e7eb; border-radius: 10px; background: #f3f4f6; }
+#my-hand .card { margin: 0 auto; }
+#my-hand .card:hover { transform: translateY(-4px); z-index: 2; }
+.card.selected { border-color: #007bff; transform: translateY(-6px); box-shadow: 0 8px 14px rgba(0, 123, 255, 0.4); z-index: 3; }
 #table-area { border-top: 2px solid #eee; border-bottom: 2px solid #eee; padding: 10px 0; min-height: 140px; }
-#last-play-info { font-weight: bold; color: #555; margin: 0 0 10px 0; height: 20px; }
-#last-played-cards { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
+#last-play-info { font-weight: bold; color: #555; margin: 0 0 10px 0; min-height: 20px; }
+#last-played-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 #last-played-cards .card { cursor: default; background-color: #f0f0f0; }
 #opponents-area { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; padding: 15px 0; }
 .opponent { border: 2px solid #ccc; padding: 10px; border-radius: 8px; transition: all 0.3s; }
 .active-turn { border-color: #ffc107 !important; box-shadow: 0 0 15px #ffc107; background-color: #fffbe6; }
-#game-message { font-size: 1.2em; font-weight: bold; color: #d9534f; height: 30px; }
+#game-message { font-size: 1.1em; font-weight: bold; color: #d9534f; min-height: 26px; }
 #turn-hint { margin: 0; color: #4b5563; font-size: 0.95em; min-height: 22px; }
-#controls { margin-top: 20px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+#controls { margin-top: 14px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
 .my-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-
-/* --- 新增：Joker卡牌样式 --- */
-.card.joker {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-.joker-text {
-    font-size: 20px;
-    font-weight: bold;
-    writing-mode: vertical-rl; /* 文字竖排 */
-    letter-spacing: 4px;
-}
+.card.joker { display: flex; justify-content: center; align-items: center; }
+.joker-text { font-size: 18px; font-weight: bold; writing-mode: vertical-rl; letter-spacing: 2px; }
 
 @media (max-width: 900px) {
     body { overflow-y: auto; min-height: 100dvh; align-items: flex-start; padding: 12px 0 max(12px, env(safe-area-inset-bottom)); }
     #lobby-view, #game-view { padding: 1em; border-radius: 12px; width: min(97%, 980px); }
     #game-view { max-height: none; overflow: visible; }
-    #my-hand .card { margin-left: -56px; }
-    .card { width: 68px; height: 96px; }
+    #my-hand { grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 6px; max-height: 42vh; }
+    .card { width: 56px; height: 80px; }
+    .card .rank { font-size: 16px; }
+    .card .suit { font-size: 12px; top: 21px; }
     #controls { position: sticky; bottom: 0; background: linear-gradient(180deg, rgba(249,249,249,0), #f9f9f9 25%); padding: 12px 0 max(8px, env(safe-area-inset-bottom)); z-index: 30; }
     #controls button { flex: 1 1 30%; min-width: 92px; }
 }
-
 @media (max-width: 640px) {
     .lobby-controls { display: grid; grid-template-columns: 1fr; gap: 8px; }
     .panel label { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 4px; margin-bottom: 8px; }
-    .card { width: 58px; height: 82px; border-radius: 6px; }
-    .card .rank { font-size: 18px; left: 6px; }
-    .card .suit { font-size: 14px; left: 6px; top: 24px; }
-    #my-hand { min-height: 122px; padding: 12px 0; }
-    #my-hand .card, #my-hand:hover .card { margin-left: -44px; }
-    #my-hand.is-scroll-layout .card, #my-hand:hover.is-scroll-layout .card { margin-left: -28px; }
-    .card.selected, #my-hand:hover .card.selected { transform: translateY(-16px); }
+    #my-hand { max-height: 48vh; }
     .my-header { flex-wrap: wrap; justify-content: center; }
 }
-
-@media (max-width: 420px) {
-    #opponents-area { grid-template-columns: 1fr; }
-    #controls button { flex-basis: 100%; }
-}
-
+@media (max-width: 420px) { #opponents-area { grid-template-columns: 1fr; } #controls button { flex-basis: 100%; } }
 .panel{border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin:10px 0;background:#fff}.panel label{margin-right:10px}#room-qr{width:180px;height:180px;object-fit:contain}#room-url{word-break:break-all;font-size:.92em;color:#1f2937}
