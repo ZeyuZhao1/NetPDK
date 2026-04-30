@@ -16,6 +16,7 @@ class BotPlayer:
         # 1. 全局牌张记忆 (Card Counting)
         self.unseen_cards = self._initialize_unseen_cards()
         self.analyzed_hand = self._analyze_hand(list(self.hand_backup))
+        self._play_info_cache = {}
         
         # 2. 游戏阶段判断
         self.game_phase = self._determine_game_phase()
@@ -97,12 +98,20 @@ class BotPlayer:
 
     def _decide_follow(self, last_played):
         """更智能的跟牌策略，包含完整的代价评估"""
-        last_type, last_value = self.game._get_play_info(last_played)
+        last_type, last_value = self._get_play_info_cached(last_played)
         
         # 1. 寻找零代价的牌 (从已分析好的组合里出)
         valid_plays = self._find_plays_from_analysis(last_type, last_value)
+        valid_plays.extend(self._generate_response_plays(last_type, last_value, len(last_played)))
         if valid_plays:
-            return self._select_best_follow(valid_plays, last_value)
+            dedup = []
+            seen = set()
+            for play in valid_plays:
+                key = tuple(sorted(play))
+                if key not in seen:
+                    seen.add(key)
+                    dedup.append(play)
+            return self._select_best_follow(dedup, last_value)
 
         # 2. 如果没有现成组合，进行模拟拆牌并评估代价
         potential_breaks = self._find_breaking_plays(last_type, last_value)
@@ -119,9 +128,9 @@ class BotPlayer:
         # 3. 决定是否使用炸弹/火箭
         if self._should_use_bomb(last_played):
             all_bombs = self.analyzed_hand.get('bombs', []) + self.analyzed_hand.get('rocket', [])
-            winning_bombs = [b for b in all_bombs if self.game._get_play_info(b)[1] > last_value]
+            winning_bombs = [b for b in all_bombs if self._get_play_info_cached(b)[1] > last_value]
             if winning_bombs:
-                return min(winning_bombs, key=lambda b: self.game._get_play_info(b)[1])
+                return min(winning_bombs, key=lambda b: self._get_play_info_cached(b)[1])
         
         return ["pass"]
 
@@ -184,7 +193,7 @@ class BotPlayer:
         """从多个可出牌组中，选择一个最安全的打出"""
         # 安全性评估：值越小，包含未见过的大牌越少，则越安全
         def assess_safety(play):
-            value = self.game._get_play_info(play)[1]
+            value = self._get_play_info_cached(play)[1]
             unseen_big_cards = sum(1 for c in play if self._get_card_value(c) > 13 and c in self.unseen_cards)
             return value - unseen_big_cards * 2 # 惩罚出未见过的大牌
         
@@ -194,12 +203,23 @@ class BotPlayer:
         """从多个可跟牌组中，选择最优的一个"""
         # 策略：选择刚刚好能大过的最小的牌，避免浪费
         def follow_score(play):
-            value = self.game._get_play_info(play)[1]
+            value = self._get_play_info_cached(play)[1]
             # 末期鼓励主动争夺牌权；前中期倾向省牌
             phase_bias = -1 if self.game_phase == 'endgame' else 1
-            return value * phase_bias + len(play) * 0.1
+            control_bonus = -3 if self._can_keep_initiative_after_play(play) else 0
+            return value * phase_bias + len(play) * 0.1 + control_bonus
         plays.sort(key=follow_score)
         return plays[0]
+
+    def _can_keep_initiative_after_play(self, play):
+        """评估打出后是否仍保留较强出牌连续性。"""
+        remaining = list(self.hand_backup)
+        for c in play:
+            if c in remaining:
+                remaining.remove(c)
+        next_analysis = self._analyze_hand(remaining)
+        strong_groups = len(next_analysis.get('straights', [])) + len(next_analysis.get('airplanes', []))
+        return strong_groups > 0
 
     def _should_use_bomb(self, last_played):
         """更精细的炸弹使用决策"""
@@ -219,6 +239,57 @@ class BotPlayer:
             return True
             
         return False
+
+    def _generate_response_plays(self, target_type, target_value, target_len):
+        """直接从手牌生成可跟牌，弥补分析组合覆盖不足。"""
+        counts = Counter(self._get_card_value(c) for c in self.hand_backup)
+        value_to_cards = {}
+        for c in self.hand_backup:
+            value_to_cards.setdefault(self._get_card_value(c), []).append(c)
+
+        candidates = []
+        if target_type == HandType.SINGLE:
+            for v in sorted(counts):
+                if v > target_value:
+                    candidates.append([value_to_cards[v][0]])
+        elif target_type == HandType.PAIR:
+            for v in sorted(counts):
+                if counts[v] >= 2 and v > target_value:
+                    candidates.append(value_to_cards[v][:2])
+        elif target_type == HandType.THREE_OF_A_KIND:
+            for v in sorted(counts):
+                if counts[v] >= 3 and v > target_value:
+                    candidates.append(value_to_cards[v][:3])
+        elif target_type == HandType.THREE_WITH_ONE:
+            triples = [v for v in sorted(counts) if counts[v] >= 3 and v > target_value]
+            singles = [v for v in sorted(counts) if counts[v] >= 1]
+            for tv in triples:
+                for sv in singles:
+                    if sv != tv:
+                        candidates.append(value_to_cards[tv][:3] + [value_to_cards[sv][0]])
+                        break
+        elif target_type == HandType.THREE_WITH_TWO:
+            triples = [v for v in sorted(counts) if counts[v] >= 3 and v > target_value]
+            pairs = [v for v in sorted(counts) if counts[v] >= 2]
+            for tv in triples:
+                for pv in pairs:
+                    if pv != tv:
+                        candidates.append(value_to_cards[tv][:3] + value_to_cards[pv][:2])
+                        break
+
+        # 二次校验，确保类型与长度严格匹配
+        verified = []
+        for play in candidates:
+            p_type, p_val = self._get_play_info_cached(play)
+            if p_type == target_type and p_val > target_value and len(play) == target_len:
+                verified.append(play)
+        return verified
+
+    def _get_play_info_cached(self, play):
+        key = tuple(sorted(play))
+        if key not in self._play_info_cache:
+            self._play_info_cache[key] = self.game._get_play_info(play)
+        return self._play_info_cache[key]
 
     def _find_breaking_plays(self, target_type, target_value):
         """模拟所有可能的拆牌方式，并计算代价"""

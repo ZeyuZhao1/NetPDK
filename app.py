@@ -1,7 +1,6 @@
 # app.py
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room
-import time
 import uuid
 import random
 
@@ -59,12 +58,11 @@ def broadcast_game_state(message=""):
             state['message'] = message
             emit('game_update', state, room=sid)
     
-    # 给予前端足够的时间来渲染UI更新
-    socketio.sleep(0.5) 
-    
     # 检查当前回合是否属于机器人
     current_sid = game.current_turn_sid
     if game.game_started and current_sid and game.players.get(current_sid, {}).get('is_bot', False):
+        # 仅在即将触发机器人回合时短暂等待，减少不必要的阻塞
+        socketio.sleep(0.25)
         handle_bot_turn(current_sid)
 
 def handle_bot_turn(bot_sid):
