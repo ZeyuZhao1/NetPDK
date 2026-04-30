@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <!-- 大厅视图 -->
     <div id="lobby-view">
         <h1>局域网跑得快</h1>
         <div class="lobby-controls">
@@ -15,6 +14,31 @@
             <button id="join-btn">加入游戏</button>
             <button id="add-bot-btn">添加机器人</button>
         </div>
+
+        <div id="room-settings" class="panel">
+            <h3>开房设置（房主）</h3>
+            <label>扑克牌副数：
+                <select id="deck-count">
+                    <option value="1">1 副</option><option value="2">2 副</option><option value="3">3 副</option>
+                    <option value="4">4 副</option><option value="5">5 副</option><option value="6">6 副</option>
+                </select>
+            </label>
+            <label>玩法模式：
+                <select id="rule-preset">
+                    <option value="full">全规则（推荐）</option>
+                    <option value="classic">经典跑得快</option>
+                    <option value="strict">严谨竞赛</option>
+                </select>
+            </label>
+            <button id="apply-settings-btn" class="secondary-btn">应用设置</button>
+        </div>
+
+        <div id="share-panel" class="panel">
+            <h3>房间分享</h3>
+            <p id="room-url"></p>
+            <img id="room-qr" alt="加入房间二维码"/>
+        </div>
+
         <div id="player-list-lobby">
             <h2>已加入的玩家:</h2>
             <ul id="lobby-players"></ul>
@@ -22,35 +46,17 @@
         <button id="start-btn">开始游戏 (仅房主)</button>
     </div>
 
-    <!-- 游戏视图 -->
     <div id="game-view" style="display: none;">
-        <div id="game-info">
-            <p id="game-message"></p>
-            <p id="turn-hint"></p>
-        </div>
+        <div id="game-info"><p id="game-message"></p><p id="turn-hint"></p></div>
         <div id="opponents-area"></div>
-
-        <div id="table-area">
-            <h3>场上出的牌</h3>
-            <p id="last-play-info"></p>
-            <div id="last-played-cards"></div>
-        </div>
-
+        <div id="table-area"><h3>场上出的牌</h3><p id="last-play-info"></p><div id="last-played-cards"></div></div>
         <div id="my-area">
-            <div class="my-header">
-                <h3 id="my-name">我的手牌</h3>
-                <button id="sort-btn" class="secondary-btn">整理手牌</button>
-            </div>
+            <div class="my-header"><h3 id="my-name">我的手牌</h3><button id="sort-btn" class="secondary-btn">整理手牌</button></div>
             <div id="my-hand"></div>
-            <div id="controls">
-                <button id="play-btn">出 牌</button>
-                <button id="clear-btn">清空选择</button>
-                <button id="pass-btn">要不起</button>
-            </div>
+            <div id="controls"><button id="play-btn">出 牌</button><button id="clear-btn">清空选择</button><button id="pass-btn">要不起</button></div>
         </div>
     </div>
 
-    <!-- 引入必要的JS库 -->
     <script src="https://cdn.socket.io/4.5.2/socket.io.min.js"></script>
     <script src="/static/js/main.js"></script>
 </body>

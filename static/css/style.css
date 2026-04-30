@@ -53,3 +53,5 @@ button:disabled { background-color: #ccc; cursor: not-allowed; box-shadow: none;
     .opponent { width: 44%; min-width: 130px; }
     .card { width: 68px; height: 96px; }
 }
+
+.panel{border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin:10px 0;background:#fff}.panel label{margin-right:10px}#room-qr{width:180px;height:180px;object-fit:contain}#room-url{word-break:break-all;font-size:.92em;color:#1f2937}

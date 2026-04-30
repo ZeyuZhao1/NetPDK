@@ -126,6 +126,29 @@ def handle_add_bot():
         game.add_player(bot_sid, bot_name, is_bot=True)
         broadcast_game_state(f"{bot_name} 加入了对局！")
 
+
+
+@socketio.on('update_room_settings')
+def handle_update_room_settings(data):
+    if request.sid != host_sid:
+        emit('error', {'message': '只有房主才能修改房间设置。'}, room=request.sid)
+        return
+    if game.game_started:
+        emit('error', {'message': '游戏进行中，不能修改房间设置。'}, room=request.sid)
+        return
+
+    num_decks = int((data or {}).get('num_decks', 1) or 1)
+    num_decks = max(1, min(6, num_decks))
+    preset = (data or {}).get('preset', 'full')
+
+    preset_map = {
+        'classic': {'include_jokers': False, 'allow_rocket': False, 'allow_airplane_wings': True, 'allow_four_with_two': False},
+        'full': {'include_jokers': True, 'allow_rocket': True, 'allow_airplane_wings': True, 'allow_four_with_two': True},
+        'strict': {'include_jokers': False, 'allow_rocket': False, 'allow_airplane_wings': False, 'allow_four_with_two': True},
+    }
+    game.update_room_settings({'num_decks': num_decks, **preset_map.get(preset, preset_map['full'])})
+    broadcast_game_state(f"房间规则已更新：{num_decks}副牌，模式 {preset}")
+
 @socketio.on('start_game')
 def handle_start_game():
     """处理房主开始游戏的请求"""
@@ -133,7 +156,7 @@ def handle_start_game():
         emit('error', {'message': '只有房主才能开始游戏。'}, room=request.sid)
         return
         
-    if game.start_game():
+    if game.start_game(num_decks=game.room_settings.get('num_decks', 1)):
         # 游戏开始后，立即广播状态，这会触发第一个玩家（可能是机器人）的回合
         broadcast_game_state("游戏开始！")
     else:
