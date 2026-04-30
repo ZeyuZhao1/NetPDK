@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('game_over', (data) => { alert(`游戏结束！获胜者是: ${data.winner_name}`); lobbyView.style.display='block'; gameView.style.display='none'; });
 
     function renderLobby(players){ lobbyPlayersList.innerHTML=''; players.forEach(p=>{const li=document.createElement('li');li.textContent=`${p.name}${p.is_bot?' (Bot)':''}`; lobbyPlayersList.appendChild(li);}); }
-    function renderGame(state){ selectedCards=[]; const myData=state.players.find(p=>p.sid===mySid); myName.textContent=myData?`${myData.name} (你)`:'我的手牌'; currentHand=sortCards(state.my_hand.slice()); renderCards(myHandDiv,currentHand);
+    function renderGame(state){ selectedCards=[]; const myData=state.players.find(p=>p.sid===mySid); myName.textContent=myData?`${myData.name} (你)`:'我的手牌'; currentHand=sortCards(state.my_hand.slice()); updateHandLayout(currentHand.length); renderCards(myHandDiv,currentHand);
         lastPlayInfo.textContent=state.last_played_cards.length?`${state.players.find(p=>p.sid===state.last_player_sid)?.name||''} 打出:`:'等待出牌...'; renderCards(lastPlayedCardsDiv,state.last_played_cards);
         opponentsArea.innerHTML=''; state.player_order.forEach(sid=>{if(sid===mySid)return; const p=state.players.find(a=>a.sid===sid); if(!p)return; const o=document.createElement('div'); o.className='opponent'; if(p.sid===state.current_turn_sid)o.classList.add('active-turn'); o.innerHTML=`<h4>${p.name}${p.is_bot?' (Bot)':''}</h4><p>剩余: ${p.card_count} 张</p>`; opponentsArea.appendChild(o);});
         const isMyTurn=state.current_turn_sid===mySid; playBtn.disabled=!isMyTurn; clearBtn.disabled=!isMyTurn; passBtn.disabled=!isMyTurn||!state.last_played_cards.length; document.querySelector('#my-area').classList.toggle('active-turn',isMyTurn);
@@ -64,5 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function sortCards(cards){ return cards.sort((a,b)=>cardValue(a)-cardValue(b)||suitValue(a)-suitValue(b)); }
     function cardValue(card){ return (card==='小王'||card==='大王') ? CARD_ORDER[card] : CARD_ORDER[card.slice(1)]; }
     function suitValue(card){ return (card==='小王'||card==='大王') ? 99 : (SUIT_ORDER[card[0]]||0); }
+    function updateHandLayout(cardCount){
+        const isNarrow = window.matchMedia('(max-width: 900px)').matches;
+        myHandDiv.classList.toggle('is-scroll-layout', isNarrow && cardCount > 9);
+    }
+    window.addEventListener('resize', () => updateHandLayout(currentHand.length));
     function renderCards(container, cards){ container.innerHTML=''; cards.forEach(cardStr=>{ const d=document.createElement('div'); d.className='card'; d.dataset.card=cardStr; if(cardStr==='小王'||cardStr==='大王'){d.classList.add('joker'); const color=cardStr==='大王'?'red':'black'; d.innerHTML=`<div class="joker-text" style="color:${color}">${cardStr.split('').join('<br>')}</div>`;} else {const suit=cardStr[0], rank=cardStr.slice(1), color=(suit==='♥'||suit==='♦')?'red':'black'; d.innerHTML=`<div class="rank" style="color:${color}">${rank}</div><div class="suit" style="color:${color}">${suit}</div><div class="rank bottom" style="color:${color}">${rank}</div><div class="suit bottom" style="color:${color}">${suit}</div>`;} container.appendChild(d); }); }
 });
