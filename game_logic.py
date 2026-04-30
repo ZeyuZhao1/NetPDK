@@ -1,5 +1,6 @@
 import random
 from collections import Counter
+from dataclasses import dataclass
 
 CARD_VALUES = {
     '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
@@ -25,6 +26,14 @@ class HandType:
     BOMB = 11
     FOUR_WITH_TWO = 12
     ROCKET = 13
+
+
+@dataclass
+class PlayInfo:
+    hand_type: int
+    value: int
+    length: int
+    sequence_length: int = 0
 
 
 class Game:
@@ -93,82 +102,87 @@ class Game:
 
     def _get_play_info(self, cards):
         if not cards:
-            return HandType.UNKNOWN, 0
+            return PlayInfo(HandType.UNKNOWN, 0, 0, 0)
         n = len(cards)
         counts = Counter(self._get_card_value(c) for c in cards)
         values = sorted(counts.keys())
 
         if self.room_settings.get('allow_rocket', True) and n == 2 and set(cards) == {'小王', '大王'}:
-            return HandType.ROCKET, 99
+            return PlayInfo(HandType.ROCKET, 99, n, 0)
 
         if len(counts) == 1:
             if n == 1:
-                return HandType.SINGLE, values[0]
+                return PlayInfo(HandType.SINGLE, values[0], n, 0)
             if n == 2:
-                return HandType.PAIR, values[0]
+                return PlayInfo(HandType.PAIR, values[0], n, 0)
             if n == 3:
-                return HandType.THREE_OF_A_KIND, values[0]
+                return PlayInfo(HandType.THREE_OF_A_KIND, values[0], n, 0)
             if n == 4:
-                return HandType.BOMB, values[0]
+                return PlayInfo(HandType.BOMB, values[0], n, 0)
 
         if len(counts) == 2:
             if n == 4 and 3 in counts.values():
-                return HandType.THREE_WITH_ONE, [v for v, c in counts.items() if c == 3][0]
+                return PlayInfo(HandType.THREE_WITH_ONE, [v for v, c in counts.items() if c == 3][0], n, 0)
             if n == 5 and 3 in counts.values():
-                return HandType.THREE_WITH_TWO, [v for v, c in counts.items() if c == 3][0]
+                return PlayInfo(HandType.THREE_WITH_TWO, [v for v, c in counts.items() if c == 3][0], n, 0)
 
         if self.room_settings.get('allow_four_with_two', True) and n in (6, 8) and 4 in counts.values():
             kicker_counts = sorted(c for c in counts.values() if c != 4)
             if kicker_counts in ([1, 1], [2], [2, 2]):
-                return HandType.FOUR_WITH_TWO, [v for v, c in counts.items() if c == 4][0]
+                return PlayInfo(HandType.FOUR_WITH_TWO, [v for v, c in counts.items() if c == 4][0], n, 0)
 
         if CARD_VALUES['2'] in values or CARD_VALUES['小王'] in values or CARD_VALUES['大王'] in values:
-            return HandType.UNKNOWN, 0
+            return PlayInfo(HandType.UNKNOWN, 0, n, 0)
 
         is_consecutive = values[-1] - values[0] == len(values) - 1
         if is_consecutive:
             if n >= 5 and len(counts) == n:
-                return HandType.STRAIGHT, values[-1]
+                return PlayInfo(HandType.STRAIGHT, values[-1], n, len(values))
             if n >= 6 and n % 2 == 0 and all(c == 2 for c in counts.values()):
-                return HandType.CONSECUTIVE_PAIRS, values[-1]
+                return PlayInfo(HandType.CONSECUTIVE_PAIRS, values[-1], n, len(values))
             if n >= 6 and n % 3 == 0 and all(c == 3 for c in counts.values()):
-                return HandType.AIRPLANE, values[-1]
+                return PlayInfo(HandType.AIRPLANE, values[-1], n, len(values))
 
         if self.room_settings.get('allow_airplane_wings', True):
             threes = sorted([v for v, c in counts.items() if c == 3])
             if len(threes) >= 2 and threes[-1] - threes[0] == len(threes) - 1:
                 if len(cards) == len(threes) * 4:
-                    return HandType.AIRPLANE_WITH_SINGLES, threes[-1]
+                    return PlayInfo(HandType.AIRPLANE_WITH_SINGLES, threes[-1], n, len(threes))
                 if len(cards) == len(threes) * 5 and all(c in (2, 3) for c in counts.values()):
-                    return HandType.AIRPLANE_WITH_PAIRS, threes[-1]
+                    return PlayInfo(HandType.AIRPLANE_WITH_PAIRS, threes[-1], n, len(threes))
 
-        return HandType.UNKNOWN, 0
+        return PlayInfo(HandType.UNKNOWN, 0, n, 0)
 
     def _validate_play(self, cards_to_play):
-        current_type, current_value = self._get_play_info(cards_to_play)
-        if current_type == HandType.UNKNOWN:
+        current_play = self._get_play_info(cards_to_play)
+        if current_play.hand_type == HandType.UNKNOWN:
             return False, "不合法的牌型。"
         if not self.last_played_cards or self.current_turn_sid == self.last_player_sid:
             return True, "OK"
-        last_type, last_value = self._get_play_info(self.last_played_cards)
+        last_play = self._get_play_info(self.last_played_cards)
 
-        if current_type == HandType.ROCKET:
+        if current_play.hand_type == HandType.ROCKET:
             return True, "OK"
-        if last_type == HandType.ROCKET:
+        if last_play.hand_type == HandType.ROCKET:
             return False, "王炸是最大的！"
-        if current_type == HandType.BOMB and last_type != HandType.BOMB:
+        if current_play.hand_type == HandType.BOMB and last_play.hand_type != HandType.BOMB:
             return True, "OK"
-        if current_type == last_type and len(cards_to_play) == len(self.last_played_cards):
-            if current_value > last_value:
+
+        same_type = current_play.hand_type == last_play.hand_type
+        same_length = current_play.length == last_play.length
+        same_sequence_length = current_play.sequence_length == last_play.sequence_length
+
+        if same_type and same_length and same_sequence_length:
+            if current_play.value > last_play.value:
                 return True, "OK"
             return False, "出的牌要比上家大。"
-        return False, "必须出与上家相同类型的牌，或使用炸弹。"
+        return False, "必须出与上家相同类型、相同张数的牌，或使用炸弹。"
 
     def play_turn(self, sid, cards):
         if not self.game_started or sid != self.current_turn_sid:
             return None, "还没轮到你。"
         player_hand = self.players[sid]['hand']
-        if not all(card in player_hand for card in cards):
+        if Counter(cards) - Counter(player_hand):
             return None, "试图打出不存在的牌。"
         is_valid, reason = self._validate_play(cards)
         if not is_valid:

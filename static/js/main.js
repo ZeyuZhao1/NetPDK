@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearBtn = document.getElementById('clear-btn');
     const sortBtn = document.getElementById('sort-btn');
 
-    let mySid = null, selectedCards = [], currentHand = [];
+    let mySid = null, selectedCardIndexes = [], currentHand = [];
     const CARD_ORDER = { '3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14,'2':15,'小王':16,'大王':17 };
     const SUIT_ORDER = { '♣':1, '♦':2, '♥':3, '♠':4 };
 
@@ -42,11 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
     startBtn.onclick = () => socket.emit('start_game');
     addBotBtn.onclick = () => socket.emit('add_bot');
     applySettingsBtn.onclick = () => socket.emit('update_room_settings', {num_decks:Number(deckCountSelect.value), preset:rulePresetSelect.value});
-    playBtn.onclick = () => selectedCards.length>0 ? socket.emit('play_cards',{cards:selectedCards}) : alert('请先选择要出的牌！');
+    playBtn.onclick = () => selectedCardIndexes.length>0 ? socket.emit('play_cards',{cards:selectedCardIndexes.map(i => currentHand[i])}) : alert('请先选择要出的牌！');
     passBtn.onclick = () => socket.emit('pass_turn');
-    clearBtn.onclick = () => { myHandDiv.querySelectorAll('.card.selected').forEach(d=>d.classList.remove('selected')); selectedCards=[]; };
+    clearBtn.onclick = () => { myHandDiv.querySelectorAll('.card.selected').forEach(d=>d.classList.remove('selected')); selectedCardIndexes=[]; };
     sortBtn.onclick = () => { currentHand = sortCards(currentHand); renderCards(myHandDiv, currentHand); };
-    myHandDiv.onclick = (e) => { const c=e.target.closest('.card'); if(!c) return; const d=c.dataset.card; c.classList.toggle('selected'); selectedCards = selectedCards.includes(d) ? selectedCards.filter(i => i !== d) : [...selectedCards, d]; };
+    myHandDiv.onclick = (e) => { const c=e.target.closest('.card'); if(!c) return; const idx=Number(c.dataset.handIndex); c.classList.toggle('selected'); selectedCardIndexes = selectedCardIndexes.includes(idx) ? selectedCardIndexes.filter(i => i !== idx) : [...selectedCardIndexes, idx]; };
 
     socket.on('error', (data) => alert('错误: ' + data.message));
     socket.on('game_update', (state) => {
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('game_over', (data) => { alert(`游戏结束！获胜者是: ${data.winner_name}`); lobbyView.style.display='block'; gameView.style.display='none'; });
 
     function renderLobby(players){ lobbyPlayersList.innerHTML=''; players.forEach(p=>{const li=document.createElement('li');li.textContent=`${p.name}${p.is_bot?' (Bot)':''}`; lobbyPlayersList.appendChild(li);}); }
-    function renderGame(state){ selectedCards=[]; const myData=state.players.find(p=>p.sid===mySid); myName.textContent=myData?`${myData.name} (你)`:'我的手牌'; currentHand=sortCards(state.my_hand.slice()); updateHandLayout(currentHand.length); renderCards(myHandDiv,currentHand);
+    function renderGame(state){ selectedCardIndexes=[]; const myData=state.players.find(p=>p.sid===mySid); myName.textContent=myData?`${myData.name} (你)`:'我的手牌'; currentHand=sortCards(state.my_hand.slice()); updateHandLayout(currentHand.length); renderCards(myHandDiv,currentHand);
         lastPlayInfo.textContent=state.last_played_cards.length?`${state.players.find(p=>p.sid===state.last_player_sid)?.name||''} 打出:`:'等待出牌...'; renderCards(lastPlayedCardsDiv,state.last_played_cards);
         opponentsArea.innerHTML=''; state.player_order.forEach(sid=>{if(sid===mySid)return; const p=state.players.find(a=>a.sid===sid); if(!p)return; const o=document.createElement('div'); o.className='opponent'; if(p.sid===state.current_turn_sid)o.classList.add('active-turn'); o.innerHTML=`<h4>${p.name}${p.is_bot?' (Bot)':''}</h4><p>剩余: ${p.card_count} 张</p>`; opponentsArea.appendChild(o);});
         const isMyTurn=state.current_turn_sid===mySid; playBtn.disabled=!isMyTurn; clearBtn.disabled=!isMyTurn; passBtn.disabled=!isMyTurn||!state.last_played_cards.length; document.querySelector('#my-area').classList.toggle('active-turn',isMyTurn);
@@ -78,5 +78,5 @@ document.addEventListener('DOMContentLoaded', () => {
         myHandDiv.classList.toggle('is-scroll-layout', isNarrow && cardCount > 9);
     }
     window.addEventListener('resize', () => updateHandLayout(currentHand.length));
-    function renderCards(container, cards){ container.innerHTML=''; cards.forEach(cardStr=>{ const d=document.createElement('div'); d.className='card'; d.dataset.card=cardStr; if(cardStr==='小王'||cardStr==='大王'){d.classList.add('joker'); const color=cardStr==='大王'?'red':'black'; d.innerHTML=`<div class="joker-text" style="color:${color}">${cardStr.split('').join('<br>')}</div>`;} else {const suit=cardStr[0], rank=cardStr.slice(1), color=(suit==='♥'||suit==='♦')?'red':'black'; d.innerHTML=`<div class="rank" style="color:${color}">${rank}</div><div class="suit" style="color:${color}">${suit}</div><div class="rank bottom" style="color:${color}">${rank}</div><div class="suit bottom" style="color:${color}">${suit}</div>`;} container.appendChild(d); }); }
+    function renderCards(container, cards){ container.innerHTML=''; cards.forEach((cardStr, index)=>{ const d=document.createElement('div'); d.className='card'; d.dataset.card=cardStr; if(container===myHandDiv){ d.dataset.handIndex=String(index); } if(cardStr==='小王'||cardStr==='大王'){d.classList.add('joker'); const color=cardStr==='大王'?'red':'black'; d.innerHTML=`<div class="joker-text" style="color:${color}">${cardStr.split('').join('<br>')}</div>`;} else {const suit=cardStr[0], rank=cardStr.slice(1), color=(suit==='♥'||suit==='♦')?'red':'black'; d.innerHTML=`<div class="rank" style="color:${color}">${rank}</div><div class="suit" style="color:${color}">${suit}</div><div class="rank bottom" style="color:${color}">${rank}</div><div class="suit bottom" style="color:${color}">${suit}</div>`;} container.appendChild(d); }); }
 });
