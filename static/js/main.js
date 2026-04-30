@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function suitValue(card){ return (card==='小王'||card==='大王') ? 99 : (SUIT_ORDER[card[0]]||0); }
     function updateHandLayout(cardCount){
         const isNarrow = window.matchMedia('(max-width: 900px)').matches;
-        myHandDiv.classList.toggle('is-scroll-layout', isNarrow && cardCount > 8);
+        myHandDiv.classList.toggle('is-scroll-layout', isNarrow && cardCount > 9);
     }
     window.addEventListener('resize', () => updateHandLayout(currentHand.length));
     function renderCards(container, cards){ container.innerHTML=''; cards.forEach(cardStr=>{ const d=document.createElement('div'); d.className='card'; d.dataset.card=cardStr; if(cardStr==='小王'||cardStr==='大王'){d.classList.add('joker'); const color=cardStr==='大王'?'red':'black'; d.innerHTML=`<div class="joker-text" style="color:${color}">${cardStr.split('').join('<br>')}</div>`;} else {const suit=cardStr[0], rank=cardStr.slice(1), color=(suit==='♥'||suit==='♦')?'red':'black'; d.innerHTML=`<div class="rank" style="color:${color}">${rank}</div><div class="suit" style="color:${color}">${suit}</div><div class="rank bottom" style="color:${color}">${rank}</div><div class="suit bottom" style="color:${color}">${suit}</div>`;} container.appendChild(d); }); }

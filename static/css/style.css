@@ -21,8 +21,7 @@ button:disabled { background-color: #ccc; cursor: not-allowed; box-shadow: none;
 #my-hand:hover .card { margin-left: -40px; }
 #my-hand .card:hover { transform: translateY(-10px); z-index: 10; }
 #my-hand.is-scroll-layout { justify-content: flex-start; padding-inline: 10px; }
-#my-hand.is-scroll-layout .card, #my-hand:hover.is-scroll-layout .card { margin-left: 8px; }
-#my-hand.is-scroll-layout .card:first-child { margin-left: 0; }
+#my-hand.is-scroll-layout .card, #my-hand:hover.is-scroll-layout .card { margin-left: -34px; }
 .card.selected { border-color: #007bff; transform: translateY(-25px); box-shadow: 0 10px 20px rgba(0, 123, 255, 0.5); z-index: 20; }
 #my-hand:hover .card.selected { transform: translateY(-25px); }
 #table-area { border-top: 2px solid #eee; border-bottom: 2px solid #eee; padding: 10px 0; min-height: 140px; }
@@ -68,7 +67,7 @@ button:disabled { background-color: #ccc; cursor: not-allowed; box-shadow: none;
     .card .suit { font-size: 14px; left: 6px; top: 24px; }
     #my-hand { min-height: 122px; padding: 12px 0; }
     #my-hand .card, #my-hand:hover .card { margin-left: -44px; }
-    #my-hand.is-scroll-layout .card, #my-hand:hover.is-scroll-layout .card { margin-left: 6px; }
+    #my-hand.is-scroll-layout .card, #my-hand:hover.is-scroll-layout .card { margin-left: -28px; }
     .card.selected, #my-hand:hover .card.selected { transform: translateY(-16px); }
     .my-header { flex-wrap: wrap; justify-content: center; }
 }
