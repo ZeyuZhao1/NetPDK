@@ -29,9 +29,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const CARD_ORDER = { '3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14,'2':15,'小王':16,'大王':17 };
     const SUIT_ORDER = { '♣':1, '♦':2, '♥':3, '♠':4 };
 
-    const url = window.location.href;
-    roomUrl.textContent = `当前网址：${url}`;
-    roomQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}`;
+    const lanIp = document.body.dataset.lanIp;
+    const currentUrl = new URL(window.location.href);
+    const isLocalLoopback = ['127.0.0.1', 'localhost', '::1'].includes(currentUrl.hostname);
+    const shareUrl = (isLocalLoopback && lanIp)
+        ? `${currentUrl.protocol}//${lanIp}${currentUrl.port ? `:${currentUrl.port}` : ''}${currentUrl.pathname}`
+        : currentUrl.href;
+    roomUrl.textContent = `分享地址：${shareUrl}`;
+    roomQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(shareUrl)}`;
 
     joinBtn.onclick = () => { const n=nameInput.value.trim(); if(n){socket.emit('join_game',{name:n}); joinBtn.disabled=true; nameInput.disabled=true;} };
     startBtn.onclick = () => socket.emit('start_game');
@@ -46,6 +51,10 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('error', (data) => alert('错误: ' + data.message));
     socket.on('game_update', (state) => {
         mySid = state.my_sid;
+        const isHost = state.host_sid === mySid;
+        startBtn.disabled = !isHost;
+        applySettingsBtn.disabled = !isHost;
+        startBtn.textContent = isHost ? '开始游戏 (你是房主)' : '开始游戏 (仅房主)';
         if (state.room_settings) {
             deckCountSelect.value = String(state.room_settings.num_decks || 1);
         }
