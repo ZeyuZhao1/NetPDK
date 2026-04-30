@@ -26,8 +26,7 @@ class BotPlayer:
         # 每次决策前都更新未见牌信息
         last_played = self.game_state['last_played_cards']
         if last_played:
-            for card in last_played:
-                self.unseen_cards.remove(card)
+            self._consume_unseen_cards(last_played)
 
         is_my_lead = not last_played or self.game_state['current_turn_sid'] == self.game_state['last_player_sid']
 
@@ -194,7 +193,7 @@ class BotPlayer:
         # 安全性评估：值越小，包含未见过的大牌越少，则越安全
         def assess_safety(play):
             value = self._get_play_info_cached(play)[1]
-            unseen_big_cards = sum(1 for c in play if self._get_card_value(c) > 13 and c in self.unseen_cards)
+            unseen_big_cards = sum(1 for c in play if self._get_card_value(c) > 13 and self.unseen_cards.get(c, 0) > 0)
             return value - unseen_big_cards * 2 # 惩罚出未见过的大牌
         
         return min(plays, key=assess_safety)
@@ -331,15 +330,24 @@ class BotPlayer:
     # --- 初始化与数据管理 ---
 
     def _initialize_unseen_cards(self):
-        full_deck = [f"{s}{r}" for s in ['♠','♥','♣','♦'] for r in ['3','4','5','6','7','8','9','10','J','Q','K','A','2']]
-        full_deck.extend(['小王', '大王'])
-        unseen = set(full_deck)
-        for card in self.hand_backup: unseen.remove(card)
+        num_decks = max(1, int(self.game_state.get('room_settings', {}).get('num_decks', 1) or 1))
+        include_jokers = bool(self.game_state.get('room_settings', {}).get('include_jokers', True))
+        full_deck = [f"{s}{r}" for s in ['♠','♥','♣','♦'] for r in ['3','4','5','6','7','8','9','10','J','Q','K','A','2']] * num_decks
+        if include_jokers:
+            full_deck.extend(['小王', '大王'] * num_decks)
+        unseen = Counter(full_deck)
+        self._consume_unseen_cards(self.hand_backup, unseen)
         # 假设游戏状态中包含所有历史出牌
         for p in self.game_state['players']:
             # 此处需要app.py将所有历史出牌信息传过来，暂时简化
             pass
         return unseen
+
+    def _consume_unseen_cards(self, cards, unseen_counter=None):
+        target = unseen_counter if unseen_counter is not None else self.unseen_cards
+        for card in cards:
+            if target.get(card, 0) > 0:
+                target[card] -= 1
         
     def _determine_game_phase(self):
         total_cards = len(self.player_states) * (54 // len(self.player_states))
