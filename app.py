@@ -18,6 +18,30 @@ game = Game()
 host_sid = None
 bot_count = 0
 
+
+def _assign_host_if_needed(preferred_sid=None):
+    """确保房主始终是一个在线的人类玩家。"""
+    global host_sid
+
+    # 优先使用本次事件关联的人类玩家
+    if preferred_sid and preferred_sid in game.players and not game.players[preferred_sid].get('is_bot', False):
+        host_sid = preferred_sid
+        return
+
+    # 如果当前房主仍是在线人类，则保持不变
+    if host_sid in game.players and not game.players[host_sid].get('is_bot', False):
+        return
+
+    # 否则按入场顺序寻找第一个人类玩家作为房主
+    for sid in game.player_order:
+        player = game.players.get(sid)
+        if player and not player.get('is_bot', False):
+            host_sid = sid
+            return
+
+    # 没有人类玩家时，房主置空
+    host_sid = None
+
 @app.route('/')
 def index():
     """提供主游戏页面"""
@@ -95,6 +119,7 @@ def handle_disconnect():
     player_name = game.players.get(sid, {}).get('name', '一名玩家')
     print(f'客户端已断开: {sid}')
     game.remove_player(sid)
+    _assign_host_if_needed()
     broadcast_game_state(f"{player_name} 已离开")
 
 @socketio.on('join_game')
@@ -104,11 +129,8 @@ def handle_join_game(data):
     name = data.get('name', '匿名玩家')
     sid = request.sid
     
-    # 第一个加入的人类玩家成为房主
-    if host_sid is None and not any(p['is_bot'] for p in game.players.values()):
-        host_sid = sid
-    
     if game.add_player(sid, name, is_bot=False):
+        _assign_host_if_needed(preferred_sid=sid)
         join_room(sid)
         broadcast_game_state(f"{name} 加入了游戏！")
     else:
@@ -124,6 +146,7 @@ def handle_add_bot():
         bot_sid = f"bot_{uuid.uuid4().hex[:8]}"
         bot_name = f"专家AI🤖️ {bot_count}号"
         game.add_player(bot_sid, bot_name, is_bot=True)
+        _assign_host_if_needed()
         broadcast_game_state(f"{bot_name} 加入了对局！")
 
 

@@ -135,16 +135,48 @@ class BotPlayer:
             HandType.STRAIGHT: 'straights',
             HandType.CONSECUTIVE_PAIRS: 'consecutive_pairs',
             HandType.AIRPLANE: 'airplanes',
+            HandType.THREE_WITH_ONE: 'threes',
+            HandType.THREE_WITH_TWO: 'threes',
         }
         key = mapping.get(target_type)
         if not key:
             return candidates
 
         for combo in self.analyzed_hand.get(key, []):
+            # 针对三带一/三带二，允许通过最小代价拼接副牌
+            if target_type in (HandType.THREE_WITH_ONE, HandType.THREE_WITH_TWO):
+                combo_type, combo_value = self.game._get_play_info(combo)
+                if combo_type == HandType.THREE_OF_A_KIND and combo_value > target_value:
+                    attached = self._build_three_with_attachment(combo, target_type)
+                    if attached:
+                        candidates.append(attached)
+                continue
+
             combo_type, combo_value = self.game._get_play_info(combo)
             if combo_type == target_type and combo_value > target_value:
                 candidates.append(combo)
         return candidates
+
+    def _build_three_with_attachment(self, three_cards, target_type):
+        """基于三条构造三带一/三带二，优先使用最小点数副牌。"""
+        used = set(three_cards)
+        if target_type == HandType.THREE_WITH_ONE:
+            singles = sorted(self.analyzed_hand.get('singles', []), key=lambda s: self._get_card_value(s[0]))
+            for s in singles:
+                if s[0] not in used:
+                    return list(three_cards) + list(s)
+            # 兜底：必要时拆对子
+            pairs = sorted(self.analyzed_hand.get('pairs', []), key=lambda p: self._get_card_value(p[0]))
+            for p in pairs:
+                if p[0] not in used:
+                    return list(three_cards) + [p[0]]
+
+        if target_type == HandType.THREE_WITH_TWO:
+            pairs = sorted(self.analyzed_hand.get('pairs', []), key=lambda p: self._get_card_value(p[0]))
+            for p in pairs:
+                if not any(card in used for card in p):
+                    return list(three_cards) + list(p)
+        return None
         
     # --- 策略辅助函数 ---
     
@@ -180,6 +212,10 @@ class BotPlayer:
         
         # 如果自己手牌很好，可以用炸弹抢牌权
         if self.game_phase == 'endgame' and len(self.hand_backup) <= 5:
+            return True
+
+        # 如果当前是非队友（此项目默认自由对战）且对手仅剩1张，积极抢回牌权
+        if last_player_cards <= 1:
             return True
             
         return False
