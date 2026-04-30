@@ -3,6 +3,7 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room
 import uuid
 import random
+import socket
 
 # 引入游戏逻辑和我们最新版的AI逻辑
 from game_logic import Game
@@ -44,7 +45,17 @@ def _assign_host_if_needed(preferred_sid=None):
 @app.route('/')
 def index():
     """提供主游戏页面"""
-    return render_template('index.html')
+    return render_template('index.html', lan_ip=_get_lan_ip())
+
+
+def _get_lan_ip():
+    """尽量获取当前机器可用于局域网访问的IP地址。"""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(('8.8.8.8', 80))
+            return s.getsockname()[0]
+    except OSError:
+        return None
 
 def broadcast_game_state(message=""):
     """
@@ -55,6 +66,7 @@ def broadcast_game_state(message=""):
     for sid, player_data in game.players.items():
         if not player_data.get('is_bot', False):
             state = game.get_game_state(sid)
+            state['host_sid'] = host_sid
             state['message'] = message
             emit('game_update', state, room=sid)
     
@@ -151,6 +163,7 @@ def handle_add_bot():
 
 @socketio.on('update_room_settings')
 def handle_update_room_settings(data):
+    _assign_host_if_needed(preferred_sid=request.sid)
     if request.sid != host_sid:
         emit('error', {'message': '只有房主才能修改房间设置。'}, room=request.sid)
         return
@@ -173,6 +186,7 @@ def handle_update_room_settings(data):
 @socketio.on('start_game')
 def handle_start_game():
     """处理房主开始游戏的请求"""
+    _assign_host_if_needed(preferred_sid=request.sid)
     if request.sid != host_sid:
         emit('error', {'message': '只有房主才能开始游戏。'}, room=request.sid)
         return
