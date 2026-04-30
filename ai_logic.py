@@ -97,7 +97,8 @@ class BotPlayer:
 
     def _decide_follow(self, last_played):
         """更智能的跟牌策略，包含完整的代价评估"""
-        last_type, last_value = self._get_play_info_cached(last_played)
+        last_play_info = self._get_play_info_cached(last_played)
+        last_type, last_value = last_play_info.hand_type, last_play_info.value
         
         # 1. 寻找零代价的牌 (从已分析好的组合里出)
         valid_plays = self._find_plays_from_analysis(last_type, last_value)
@@ -153,15 +154,15 @@ class BotPlayer:
         for combo in self.analyzed_hand.get(key, []):
             # 针对三带一/三带二，允许通过最小代价拼接副牌
             if target_type in (HandType.THREE_WITH_ONE, HandType.THREE_WITH_TWO):
-                combo_type, combo_value = self.game._get_play_info(combo)
-                if combo_type == HandType.THREE_OF_A_KIND and combo_value > target_value:
+                combo_info = self.game._get_play_info(combo)
+                if combo_info.hand_type == HandType.THREE_OF_A_KIND and combo_info.value > target_value:
                     attached = self._build_three_with_attachment(combo, target_type)
                     if attached:
                         candidates.append(attached)
                 continue
 
-            combo_type, combo_value = self.game._get_play_info(combo)
-            if combo_type == target_type and combo_value > target_value:
+            combo_info = self.game._get_play_info(combo)
+            if combo_info.hand_type == target_type and combo_info.value > target_value:
                 candidates.append(combo)
         return candidates
 
@@ -226,7 +227,7 @@ class BotPlayer:
         last_player_sid = self.game_state['last_player_sid']
         last_player_cards = self.player_states[last_player_sid]['card_count']
         
-        if last_player_cards <= 3 and self.game._get_play_info(last_played)[1] > CARD_VALUES['Q']:
+        if last_player_cards <= 3 and self.game._get_play_info(last_played).value > CARD_VALUES['Q']:
             return True
         
         # 如果自己手牌很好，可以用炸弹抢牌权
@@ -279,8 +280,8 @@ class BotPlayer:
         # 二次校验，确保类型与长度严格匹配
         verified = []
         for play in candidates:
-            p_type, p_val = self._get_play_info_cached(play)
-            if p_type == target_type and p_val > target_value and len(play) == target_len:
+            play_info = self._get_play_info_cached(play)
+            if play_info.hand_type == target_type and play_info.value > target_value and len(play) == target_len:
                 verified.append(play)
         return verified
 
